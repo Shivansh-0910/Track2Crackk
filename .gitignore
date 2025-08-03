@@ -101,6 +101,13 @@ backend/application-*.properties
 backend/application-*.yml
 backend/application-*.yaml
 
+# Backend environment variables
+backend/.env
+backend/.env.local
+backend/.env.development.local
+backend/.env.test.local
+backend/.env.production.local
+
 # ===================================
 # DATABASE
 # ===================================
