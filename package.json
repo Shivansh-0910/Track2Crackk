@@ -1,0 +1,27 @@
+{
+  "name": "Track2Crack",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "postinstall": "npm run frontend-install",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "frontend": "cd frontend && npm run dev",
+    "frontend-install": "cd frontend && npm install",
+    "backend": "cd backend && mvn spring-boot:run",
+    "backend-build": "cd backend && mvn clean package",
+    "start": "concurrently -n \"frontend,backend\" \"npm run frontend\" \"npm run backend\"",
+    "start-frontend": "npm run frontend",
+    "start-backend": "npm run backend",
+    "build": "npm run frontend-install && cd frontend && npm run build",
+    "dev": "npm run start"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "Master DSA & Crack Interviews - A comprehensive platform for tracking DSA learning progress and interview preparation",
+  "dependencies": {
+    "concurrently": "^9.1.0"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3"
+  }
+}
