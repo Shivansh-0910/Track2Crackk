@@ -11,7 +11,7 @@ import com.trackdsa.model.User;
 import com.trackdsa.model.UserProblem;
 import com.trackdsa.repository.UserRepository;
 import com.trackdsa.repository.UserProblemRepository;
-import com.trackdsa.util.JwtUtil;
+import com.trackdsa.security.JwtUtil;
 
 @RestController
 @RequestMapping("/api/problems")
