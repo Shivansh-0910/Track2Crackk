@@ -30,7 +30,6 @@ export function Dashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        console.log('Fetching dashboard data...')
         const [profileRes, recommendationsRes, analyticsRes] = await Promise.all([
           getUserProfile(),
           getDailyRecommendations(),
@@ -40,7 +39,6 @@ export function Dashboard() {
         setUserProfile(profileRes.user)
         setRecommendations(recommendationsRes.problems)
         setAnalytics(analyticsRes.analytics)
-        console.log('Dashboard data loaded successfully')
       } catch (error) {
         console.error('Error fetching dashboard data:', error)
         toast({
@@ -54,7 +52,7 @@ export function Dashboard() {
     }
 
     fetchDashboardData()
-  }, [toast])
+  }, [])
 
   const handleMarkAsSolved = async (problemId) => {
     console.log('Marking problem as solved:', problemId)

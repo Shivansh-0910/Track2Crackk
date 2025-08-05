@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo, useCallback } from "react"
 import { useParams, Link } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -21,11 +21,31 @@ import { getTopicDetails } from "@/api/topics"
 import { updateProblemStatus } from "@/api/problems"
 import { useToast } from "@/hooks/useToast"
 
+// Move functions outside component to prevent recreation on every render
+const getDifficultyColor = (difficulty) => {
+  switch (difficulty) {
+    case 'Easy': return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+    case 'Medium': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
+    case 'Hard': return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+    default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
+  }
+}
+
+const getStatusIcon = (status) => {
+  switch (status) {
+    case 'Solved': return <CheckCircle className="w-4 h-4 text-green-600" />
+    case 'Attempted': return <Clock className="w-4 h-4 text-yellow-600" />
+    case 'In Progress': return <Clock className="w-4 h-4 text-yellow-600" />
+    case 'Not Started': return <Circle className="w-4 h-4 text-gray-400" />
+    default: return <Circle className="w-4 h-4 text-gray-400" />
+  }
+}
+
 export function TopicDetail() {
   const { topicId } = useParams()
   const [topic, setTopic] = useState(null)
   const [problems, setProblems] = useState([])
-  const [filteredProblems, setFilteredProblems] = useState([])
+
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [difficultyFilter, setDifficultyFilter] = useState('all')
@@ -33,15 +53,81 @@ export function TopicDetail() {
   const [selectedProblems, setSelectedProblems] = useState([])
   const { toast } = useToast()
 
+  // All useMemo hooks must be called before any conditional returns
+  // Use useMemo instead of useEffect for filtering to prevent unnecessary re-renders
+  const filteredProblems = useMemo(() => {
+    // Safety check: only filter if problems array exists and has valid data
+    if (!problems || problems.length === 0) {
+      return []
+    }
+
+    let filtered = problems.filter(problem => {
+      // Safety check: ensure problem has required fields
+      if (!problem || !problem.name) {
+        return false
+      }
+      return problem.name.toLowerCase().includes(searchTerm.toLowerCase())
+    })
+
+    if (difficultyFilter !== 'all') {
+      filtered = filtered.filter(problem => problem.difficulty === difficultyFilter)
+    }
+
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(problem => {
+        if (statusFilter === 'solved') return problem.status === 'Solved'
+        if (statusFilter === 'attempted') return problem.status === 'Attempted' || problem.status === 'In Progress'
+        if (statusFilter === 'not-started') return problem.status === 'Not Started'
+        return true
+      })
+    }
+
+    // Pre-calculate expensive operations to prevent re-rendering
+    return filtered.map(problem => ({
+      ...problem,
+      companiesDisplay: problem.companies ? problem.companies.slice(0, 3).join(', ') : '',
+      companiesCount: problem.companies ? problem.companies.length : 0,
+      hasMoreCompanies: problem.companies ? problem.companies.length > 3 : false,
+      moreCompaniesCount: problem.companies ? Math.max(0, problem.companies.length - 3) : 0
+    }))
+  }, [problems, searchTerm, difficultyFilter, statusFilter])
+
+  // Use useMemo for expensive calculations
+  const { solvedCount, totalCount, percentage } = useMemo(() => {
+    const solved = problems.filter(p => p.status === 'Solved').length;
+    const total = problems.length;
+    const percent = total > 0 ? Math.round((solved / total) * 100) : 0;
+
+    return {
+      solvedCount: solved,
+      totalCount: total,
+      percentage: percent
+    };
+  }, [problems])
+
   useEffect(() => {
     const fetchTopicDetails = async () => {
       if (!topicId) return
       try {
+        setLoading(true)
+
+
         const response = await getTopicDetails(topicId)
         const topicData = response.topic
-        setTopic(topicData)
-        setProblems(topicData.problems)
-        console.log('Topic details loaded successfully')
+
+        // Safety checks for the received data
+        if (topicData && topicData.problems && Array.isArray(topicData.problems)) {
+          setTopic(topicData)
+          setProblems(topicData.problems)
+
+        } else {
+          console.error('Invalid topic data received:', topicData)
+          toast({
+            title: "Error",
+            description: "Invalid topic data received",
+            variant: "destructive"
+          })
+        }
       } catch (error) {
         console.error('Error fetching topic details:', error)
         toast({
@@ -54,53 +140,39 @@ export function TopicDetail() {
       setLoading(false)
     }
     fetchTopicDetails()
-  }, [topicId, toast])
+  }, [topicId])
 
-  useEffect(() => {
-    let filtered = problems.filter(problem =>
-      problem.name.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-
-    if (difficultyFilter !== 'all') {
-      filtered = filtered.filter(problem => problem.difficulty === difficultyFilter)
-    }
-
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(problem => {
-        if (statusFilter === 'solved') return problem.status === 'Solved'
-        if (statusFilter === 'attempted') return problem.status === 'Attempted'
-        if (statusFilter === 'not-started') return problem.status === 'Not Started'
-        return true
-      })
-    }
-
-    setFilteredProblems(filtered)
-  }, [problems, searchTerm, difficultyFilter, statusFilter])
-
-  const handleStatusChange = async (problemId, newStatus) => {
+  const handleStatusChange = useCallback(async (problemId, newStatus) => {
     try {
-      console.log('Updating problem status:', problemId, newStatus)
-      await updateProblemStatus(problemId, newStatus)
-      
-      setProblems(prev => prev.map(problem =>
-        problem._id === problemId ? { ...problem, status: newStatus } : problem
-      ))
-      
+      console.log('🔄 Updating problem status:', { problemId, newStatus })
+
+      const response = await updateProblemStatus(problemId, newStatus)
+      console.log('✅ API Response:', response)
+
+      setProblems(prev => {
+        const updated = prev.map(problem =>
+          problem._id === problemId ? { ...problem, status: newStatus } : problem
+        )
+        console.log('🔄 Updated problem in state:', updated.find(p => p._id === problemId))
+        return updated
+      })
+
       toast({
         title: "Success",
-        description: `Problem marked as ${newStatus.toLowerCase()}`,
+        description: `Problem marked as ${newStatus}`,
       })
     } catch (error) {
-      console.error('Error updating problem status:', error)
+      console.error('❌ Error updating problem status:', error)
+      console.error('❌ Error details:', error.response?.data || error.message)
       toast({
         title: "Error",
-        description: "Failed to update problem status",
+        description: `Failed to update problem status: ${error.message}`,
         variant: "destructive"
       })
     }
-  }
+  }, [toast])
 
-  const handleBulkStatusChange = async (status) => {
+  const handleBulkStatusChange = useCallback(async (status) => {
     if (selectedProblems.length === 0) {
       toast({
         title: "No problems selected",
@@ -133,32 +205,17 @@ export function TopicDetail() {
         variant: "destructive"
       })
     }
-  }
+  }, [selectedProblems, toast])
 
-  const toggleProblemSelection = (problemId) => {
+  const toggleProblemSelection = useCallback((problemId) => {
     setSelectedProblems(prev =>
       prev.includes(problemId)
         ? prev.filter(id => id !== problemId)
         : [...prev, problemId]
     )
-  }
+  }, [])
 
-  const getDifficultyColor = (difficulty) => {
-    switch (difficulty) {
-      case 'Easy': return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-      case 'Medium': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
-      case 'Hard': return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
-    }
-  }
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'Solved': return <CheckCircle className="w-4 h-4 text-green-600" />
-      case 'Attempted': return <Clock className="w-4 h-4 text-yellow-600" />
-      default: return <Circle className="w-4 h-4 text-gray-400" />
-    }
-  }
 
   if (loading) {
     return (
@@ -179,9 +236,6 @@ export function TopicDetail() {
     )
   }
 
-  const solvedCount = problems.filter(p => p.status === 'Solved').length
-  const totalCount = problems.length
-
   return (
     <div className="space-y-6 animate-in fade-in-50 duration-500">
       {/* Header */}
@@ -195,7 +249,7 @@ export function TopicDetail() {
         <div className="flex-1">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{topic.name}</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            {solvedCount}/{totalCount} problems solved ({Math.round((solvedCount/totalCount) * 100)}%)
+            {solvedCount}/{totalCount} problems solved ({percentage}%)
           </p>
         </div>
       </div>
@@ -303,9 +357,9 @@ export function TopicDetail() {
                     <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                       <div className="flex items-center gap-1">
                         <Building className="w-3 h-3" />
-                        <span>{problem.companies.slice(0, 3).join(', ')}</span>
-                        {problem.companies.length > 3 && (
-                          <span>+{problem.companies.length - 3} more</span>
+                        <span>{problem.companiesDisplay}</span>
+                        {problem.hasMoreCompanies && (
+                          <span>+{problem.moreCompaniesCount} more</span>
                         )}
                       </div>
                     </div>
@@ -321,6 +375,7 @@ export function TopicDetail() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Not Started">Not Started</SelectItem>
+                        <SelectItem value="In Progress">In Progress</SelectItem>
                         <SelectItem value="Attempted">Attempted</SelectItem>
                         <SelectItem value="Solved">Solved</SelectItem>
                       </SelectContent>

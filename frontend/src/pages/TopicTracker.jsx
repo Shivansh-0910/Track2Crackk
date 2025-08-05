@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { Link } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/useToast"
 
 export function TopicTracker() {
   const [topics, setTopics] = useState([])
-  const [filteredTopics, setFilteredTopics] = useState([])
+
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState('name')
@@ -21,12 +21,9 @@ export function TopicTracker() {
   useEffect(() => {
     const fetchTopics = async () => {
       try {
-        console.log('Fetching topics...')
         const response = await getTopics()
         const topicsData = response.topics
         setTopics(topicsData)
-        setFilteredTopics(topicsData)
-        console.log('Topics loaded successfully')
       } catch (error) {
         console.error('Error fetching topics:', error)
         toast({
@@ -40,9 +37,12 @@ export function TopicTracker() {
     }
 
     fetchTopics()
-  }, [toast])
+  }, [])
 
-  useEffect(() => {
+  // Use useMemo to prevent unnecessary re-calculations
+  const filteredTopics = useMemo(() => {
+    if (!topics || topics.length === 0) return []
+
     let filtered = topics.filter(topic =>
       topic.name.toLowerCase().includes(searchTerm.toLowerCase())
     )
@@ -70,7 +70,11 @@ export function TopicTracker() {
       }
     })
 
-    setFilteredTopics(filtered)
+    // Add pre-calculated progress to prevent re-calculation in render
+    return filtered.map(topic => ({
+      ...topic,
+      progress: Math.round((topic.solvedProblems / topic.totalProblems) * 100)
+    }))
   }, [topics, searchTerm, sortBy, filterBy])
 
   const getProgressColor = (progress) => {
@@ -144,9 +148,7 @@ export function TopicTracker() {
 
       {/* Topics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredTopics.map((topic) => {
-          const progress = (topic.solvedProblems / topic.totalProblems) * 100
-          return (
+        {filteredTopics.map((topic) => (
             <Link key={topic._id} to={`/topics/${topic._id}`}>
               <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer">
                 <CardHeader className="pb-3">
@@ -169,9 +171,9 @@ export function TopicTracker() {
                   <div>
                     <div className="flex justify-between text-sm mb-2">
                       <span className="text-gray-600 dark:text-gray-400">Progress</span>
-                      <span className="font-medium">{Math.round(progress)}%</span>
+                      <span className="font-medium">{topic.progress}%</span>
                     </div>
-                    <Progress value={progress} className="h-2" />
+                    <Progress value={topic.progress} className="h-2" />
                   </div>
 
                   <div className="grid grid-cols-3 gap-2 text-center">
@@ -208,8 +210,7 @@ export function TopicTracker() {
                 </CardContent>
               </Card>
             </Link>
-          )
-        })}
+        ))}
       </div>
 
       {filteredTopics.length === 0 && (

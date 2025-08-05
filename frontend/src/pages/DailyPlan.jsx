@@ -37,12 +37,15 @@ export function DailyPlan() {
     fetchDailyPlan()
   }, [])
 
-  const fetchDailyPlan = async () => {
+  const fetchDailyPlan = async (config = null) => {
     try {
-      console.log('Fetching daily plan...')
-      const response = await getDailyRecommendations()
+      console.log('Fetching daily plan with config:', config || planConfig)
+      const response = await getDailyRecommendations(config || planConfig)
+      console.log('API Response:', response)
+      console.log('Total estimated time from API:', response.totalEstimatedTime)
+      console.log('Time limit:', response.timeLimit)
       setRecommendations(response.problems)
-      console.log('Daily plan loaded successfully')
+      console.log('Daily plan loaded successfully:', response.problems.length, 'problems')
     } catch (error) {
       console.error('Error fetching daily plan:', error)
       toast({
@@ -59,9 +62,8 @@ export function DailyPlan() {
     setGenerating(true)
     try {
       console.log('Generating new plan with config:', planConfig)
-      // Simulate API call with config
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      await fetchDailyPlan()
+      // Generate new plan with current configuration
+      await fetchDailyPlan(planConfig)
       toast({
         title: "Success",
         description: "New daily plan generated!",
@@ -249,7 +251,19 @@ export function DailyPlan() {
                   </div>
                   <div>
                     <p className="text-sm text-gray-600 dark:text-gray-400">Est. Time</p>
-                    <p className="text-xl font-bold">{getTotalEstimatedTime()} min</p>
+                    <div className="flex items-center gap-2">
+                      <p className={`text-xl font-bold ${
+                        getTotalEstimatedTime() > planConfig.timeAvailable
+                          ? 'text-red-600 dark:text-red-400'
+                          : 'text-green-600 dark:text-green-400'
+                      }`}>
+                        {getTotalEstimatedTime()} min
+                      </p>
+                      <span className="text-sm text-gray-500">/ {planConfig.timeAvailable} min</span>
+                    </div>
+                    {getTotalEstimatedTime() > planConfig.timeAvailable && (
+                      <p className="text-xs text-red-500 mt-1">⚠️ Exceeds time limit</p>
+                    )}
                   </div>
                 </div>
               </CardContent>

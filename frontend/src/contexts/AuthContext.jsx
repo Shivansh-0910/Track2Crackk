@@ -1,15 +1,48 @@
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 import { login as apiLogin, register as apiRegister } from "../api/auth";
 
 const AuthContext = createContext(null);
 
+// Helper function to check if token is valid (not expired)
+function isTokenValid(token) {
+  if (!token) return false;
+
+  try {
+    // Decode JWT token to check expiration
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const currentTime = Date.now() / 1000;
+
+    // Check if token is expired (with 5 minute buffer)
+    return payload.exp > currentTime + 300;
+  } catch (error) {
+    console.log("Invalid token format:", error);
+    return false;
+  }
+}
+
 export function AuthProvider({ children }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Check authentication status on mount
+  useEffect(() => {
     const token = localStorage.getItem("accessToken");
-    console.log("Initial auth state:", !!token);
-    return !!token;
-  });
+    console.log("Checking initial auth state...");
+
+    if (token && isTokenValid(token)) {
+      console.log("Valid token found, user is authenticated");
+      setIsAuthenticated(true);
+    } else {
+      console.log("No valid token found, clearing storage");
+      // Clear invalid/expired tokens
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      setIsAuthenticated(false);
+    }
+
+    setIsLoading(false);
+  }, []);
 
   const login = async (email, password) => {
     try {
@@ -49,7 +82,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, register, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, isLoading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

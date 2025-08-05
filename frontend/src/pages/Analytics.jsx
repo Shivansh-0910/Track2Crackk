@@ -40,10 +40,8 @@ export function Analytics() {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        console.log('Fetching analytics data...')
         const response = await getAnalytics()
         setAnalytics(response.analytics)
-        console.log('Analytics data loaded successfully')
       } catch (error) {
         console.error('Error fetching analytics:', error)
         toast({
@@ -57,7 +55,7 @@ export function Analytics() {
     }
 
     fetchAnalytics()
-  }, [toast])
+  }, [])
 
   if (loading) {
     return (
