@@ -19,6 +19,7 @@ import { getDailyRecommendations } from "@/api/problems"
 import { getAnalytics } from "@/api/analytics"
 import { useToast } from "@/hooks/useToast"
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
+import { AIRecommendations } from "@/components/AIRecommendations"
 
 export function Dashboard() {
   const [userProfile, setUserProfile] = useState(null)
@@ -81,132 +82,101 @@ export function Dashboard() {
   return (
     <div className="space-y-6 animate-in fade-in-50 duration-500">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-2xl p-6 text-white shadow-xl">
-        <div className="flex items-center justify-between">
+      <div className="card-premium rounded-3xl p-8 text-white shadow-glow animate-fade-in-scale">
+        <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary via-accent to-primary/80 opacity-90"></div>
+        <div className="relative z-10 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Welcome back, {userProfile?.name}! 👋</h1>
-            <p className="text-blue-100">Ready to crack some interviews today?</p>
+            <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-white to-white/90 bg-clip-text text-transparent">
+              Welcome back, {userProfile?.name}! 👋
+            </h1>
+            <p className="text-lg text-white/90 font-medium">Ready to crack some interviews today?</p>
           </div>
           <div className="text-right">
-            <div className="flex items-center gap-2 mb-2">
-              <Flame className="w-5 h-5 text-orange-300" />
-              <span className="text-2xl font-bold">{userProfile?.currentStreak}</span>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-3 bg-white/20 rounded-full backdrop-blur-sm">
+                <Flame className="w-6 h-6 text-orange-300" />
+              </div>
+              <div>
+                <span className="text-3xl font-bold text-white">{userProfile?.currentStreak}</span>
+                <p className="text-sm text-white/80">day streak</p>
+              </div>
             </div>
-            <p className="text-sm text-blue-100">day streak</p>
           </div>
         </div>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+        <Card className="card-premium hover:shadow-glow transition-all duration-500 hover:scale-105 animate-slide-in-up">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Problems</CardTitle>
-            <Target className="h-4 w-4 text-blue-600" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Problems</CardTitle>
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Target className="h-4 w-4 text-primary" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">{userProfile?.totalProblems}</div>
-            <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
+            <div className="text-3xl font-bold text-foreground">{userProfile?.totalProblems}</div>
+            <p className="text-xs text-success flex items-center gap-1 mt-2">
               <TrendingUp className="w-3 h-3" />
               +12 this week
             </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+        <Card className="card-premium hover:shadow-glow transition-all duration-500 hover:scale-105 animate-slide-in-up" style={{animationDelay: '0.1s'}}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Current Streak</CardTitle>
-            <Flame className="h-4 w-4 text-orange-500" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Current Streak</CardTitle>
+            <div className="p-2 bg-warning/10 rounded-lg">
+              <Flame className="h-4 w-4 text-warning" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">{userProfile?.currentStreak}</div>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">days in a row</p>
+            <div className="text-3xl font-bold text-foreground">{userProfile?.currentStreak}</div>
+            <p className="text-xs text-muted-foreground mt-2">days in a row</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+        <Card className="card-premium hover:shadow-glow transition-all duration-500 hover:scale-105 animate-slide-in-up" style={{animationDelay: '0.2s'}}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Weekly Goal</CardTitle>
-            <Calendar className="h-4 w-4 text-purple-600" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Weekly Goal</CardTitle>
+            <div className="p-2 bg-accent/10 rounded-lg">
+              <Calendar className="h-4 w-4 text-accent" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">{weeklyProgress}/{userProfile?.weeklyGoal}</div>
+            <div className="text-3xl font-bold text-foreground">{weeklyProgress}/{userProfile?.weeklyGoal}</div>
             <Progress value={(weeklyProgress / userProfile?.weeklyGoal) * 100} className="mt-2" />
           </CardContent>
         </Card>
 
-        <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+        <Card className="card-premium hover:shadow-glow transition-all duration-500 hover:scale-105 animate-slide-in-up" style={{animationDelay: '0.3s'}}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Today's Status</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Today's Status</CardTitle>
+            <div className="p-2 bg-success/10 rounded-lg">
+              <CheckCircle className="h-4 w-4 text-success" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">3/3</div>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">problems completed</p>
+            <div className="text-3xl font-bold text-success">3/3</div>
+            <p className="text-xs text-muted-foreground mt-2">problems completed</p>
           </CardContent>
         </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Today's Recommendations */}
+        {/* AI-Powered Recommendations */}
         <div className="lg:col-span-2">
-          <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-0 shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="w-5 h-5 text-blue-600" />
-                Today's Recommendations
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {recommendations.map((problem) => (
-                <div key={problem._id} className="flex items-center justify-between p-4 bg-gray-50/50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100/50 dark:hover:bg-gray-600/50 transition-colors">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-medium text-gray-900 dark:text-white">{problem.name}</h3>
-                      <Badge variant={problem.difficulty === 'Easy' ? 'secondary' : problem.difficulty === 'Medium' ? 'default' : 'destructive'}>
-                        {problem.difficulty}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                      <span className="flex items-center gap-1">
-                        <BookOpen className="w-4 h-4" />
-                        {problem.topic}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        ~{problem.estimatedTime} min
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => window.open(problem.url, '_blank')}
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => handleMarkAsSolved(problem._id)}
-                      className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
-                    >
-                      <CheckCircle className="w-4 h-4 mr-1" />
-                      Solved
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+          <AIRecommendations userProfile={userProfile} />
         </div>
 
         {/* Topic Mastery Chart */}
-        <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-0 shadow-lg">
+        <Card className="card-premium animate-fade-in-scale">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-yellow-600" />
-              Topic Mastery
+            <CardTitle className="flex items-center gap-3">
+              <div className="p-2 bg-warning/10 rounded-lg">
+                <Trophy className="w-5 h-5 text-warning" />
+              </div>
+              <span className="text-gradient font-semibold">Topic Mastery</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -228,14 +198,14 @@ export function Dashboard() {
                 <Tooltip />
               </PieChart>
             </ResponsiveContainer>
-            <div className="space-y-2 mt-4">
+            <div className="space-y-3 mt-6">
               {pieData.map((item, index) => (
-                <div key={index} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
-                    <span className="text-gray-700 dark:text-gray-300">{item.name}</span>
+                <div key={index} className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: item.color }}></div>
+                    <span className="text-sm font-medium text-foreground">{item.name}</span>
                   </div>
-                  <span className="font-medium text-gray-900 dark:text-white">{item.value}%</span>
+                  <span className="font-bold text-foreground">{item.value}%</span>
                 </div>
               ))}
             </div>
@@ -269,6 +239,8 @@ export function Dashboard() {
           </ResponsiveContainer>
         </CardContent>
       </Card>
+
+
     </div>
   )
 }

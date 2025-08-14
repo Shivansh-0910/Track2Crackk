@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { User, Settings, Trophy, Code, Upload, Save } from "lucide-react"
+import { User, Settings, Trophy, Code, Upload, Save, Award, Target, Calendar, Star } from "lucide-react"
 import { getUserProfile, updateUserProfile } from "@/api/user"
 import { useToast } from "@/hooks/useToast"
 
@@ -115,168 +115,345 @@ export function Profile() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <p className="text-muted-foreground">Loading your profile...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in-50 duration-500">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Profile</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your account and preferences</p>
-        </div>
-      </div>
-
-      {/* Welcome message for new users */}
-      {(!formData.name || formData.name === formData.email?.split('@')[0]) && (
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <User className="h-5 w-5 text-blue-400" />
+    <div className="space-y-8 animate-in fade-in-50 duration-500">
+      {/* Header Section */}
+      <div className="card-premium rounded-3xl p-8 text-white shadow-glow animate-fade-in-scale">
+        <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary via-accent to-primary/80 opacity-90"></div>
+        <div className="relative z-10 flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <div className="p-4 bg-white/20 rounded-full backdrop-blur-sm">
+              <Avatar className="w-16 h-16 border-4 border-white/30">
+                <AvatarImage src={profile?.avatar} />
+                <AvatarFallback className="text-2xl font-bold bg-white/20 text-white">
+                  {profile?.name?.charAt(0) || 'U'}
+                </AvatarFallback>
+              </Avatar>
             </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                Welcome! Complete your profile
-              </h3>
-              <div className="mt-2 text-sm text-blue-700 dark:text-blue-300">
-                <p>
-                  Fill out your profile information below to get personalized DSA recommendations and track your progress effectively.
-                </p>
+            <div>
+              <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-white to-white/90 bg-clip-text text-transparent">
+                {profile?.name || 'User Profile'}
+              </h1>
+              <p className="text-lg text-white/90 font-medium">{profile?.email}</p>
+              <div className="flex items-center gap-2 mt-2">
+                <Badge className="bg-white/20 text-white border-white/30">
+                  {profile?.level || 'Beginner'}
+                </Badge>
+                <Badge className="bg-white/20 text-white border-white/30">
+                  {profile?.total_problems_solved || 0} problems solved
+                </Badge>
               </div>
             </div>
           </div>
+          <div className="text-right">
+            <div className="text-2xl font-bold text-white">{profile?.currentStreak || 0}</div>
+            <p className="text-sm text-white/80">day streak</p>
+          </div>
         </div>
-      )}
-
-
+      </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="profile"><User className="w-4 h-4 mr-2" />Profile</TabsTrigger>
-          <TabsTrigger value="achievements"><Trophy className="w-4 h-4 mr-2" />Achievements</TabsTrigger>
-          <TabsTrigger value="settings"><Settings className="w-4 h-4 mr-2" />Settings</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 card-premium p-1">
+          <TabsTrigger value="profile" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <User className="w-4 h-4 mr-2" />
+            Profile
+          </TabsTrigger>
+          <TabsTrigger value="achievements" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <Trophy className="w-4 h-4 mr-2" />
+            Achievements
+          </TabsTrigger>
+          <TabsTrigger value="stats" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <Code className="w-4 h-4 mr-2" />
+            Statistics
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="space-y-6">
-          <Card>
+          <Card className="card-premium animate-fade-in-scale">
             <CardHeader>
-              <CardTitle>Personal Information</CardTitle>
+              <CardTitle className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Settings className="w-5 h-5 text-primary" />
+                </div>
+                <span className="text-gradient font-semibold">Personal Information</span>
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name">Name</Label>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-sm font-medium text-foreground">Full Name</Label>
                   <Input
                     id="name"
-                    placeholder="Enter your full name"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    className="input-premium"
+                    placeholder="Enter your full name"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="email">Email</Label>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-medium text-foreground">Email</Label>
                   <Input
                     id="email"
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    disabled
+                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    className="input-premium"
+                    placeholder="Enter your email"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="level" className="text-sm font-medium text-foreground">Experience Level</Label>
+                  <Select value={formData.level} onValueChange={(value) => setFormData(prev => ({ ...prev, level: value }))}>
+                    <SelectTrigger className="input-premium">
+                      <SelectValue placeholder="Select your level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="beginner">Beginner</SelectItem>
+                      <SelectItem value="intermediate">Intermediate</SelectItem>
+                      <SelectItem value="advanced">Advanced</SelectItem>
+                      <SelectItem value="expert">Expert</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="leetcode" className="text-sm font-medium text-foreground">LeetCode Username</Label>
+                  <Input
+                    id="leetcode"
+                    value={formData.leetcode_username}
+                    onChange={(e) => setFormData(prev => ({ ...prev, leetcode_username: e.target.value }))}
+                    className="input-premium"
+                    placeholder="Your LeetCode username"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="timeAvailability" className="text-sm font-medium text-foreground">Daily Time Availability</Label>
+                  <Select value={formData.timeAvailability} onValueChange={(value) => setFormData(prev => ({ ...prev, timeAvailability: value }))}>
+                    <SelectTrigger className="input-premium">
+                      <SelectValue placeholder="Select time availability" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="30min">30 minutes</SelectItem>
+                      <SelectItem value="1hour">1 hour</SelectItem>
+                      <SelectItem value="2hours">2 hours</SelectItem>
+                      <SelectItem value="3hours">3+ hours</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="weeklyGoal" className="text-sm font-medium text-foreground">Weekly Goal (problems)</Label>
+                  <Input
+                    id="weeklyGoal"
+                    type="number"
+                    value={formData.weeklyGoal}
+                    onChange={(e) => setFormData(prev => ({ ...prev, weeklyGoal: parseInt(e.target.value) || 0 }))}
+                    className="input-premium"
+                    placeholder="Number of problems per week"
                   />
                 </div>
               </div>
-              <div>
-                <Label htmlFor="bio">Bio</Label>
+
+              <div className="space-y-2">
+                <Label htmlFor="bio" className="text-sm font-medium text-foreground">Bio</Label>
                 <Textarea
                   id="bio"
-                  placeholder="Tell us about yourself..."
                   value={formData.bio}
-                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
+                  className="input-premium min-h-[100px]"
+                  placeholder="Tell us about yourself and your goals..."
                 />
               </div>
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>DSA Progress</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="leetcode_username">LeetCode Username</Label>
-                  <Input
-                    id="leetcode_username"
-                    placeholder="Your LeetCode username"
-                    value={formData.leetcode_username}
-                    onChange={(e) => setFormData({ ...formData, leetcode_username: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="total_problems_solved">Problems Solved</Label>
-                  <Input
-                    id="total_problems_solved"
-                    type="number"
-                    value={formData.total_problems_solved}
-                    onChange={(e) => setFormData({ ...formData, total_problems_solved: Number(e.target.value) })}
-                  />
+              <div className="space-y-3">
+                <Label className="text-sm font-medium text-foreground">Target Companies</Label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {COMPANIES.map((company) => (
+                    <div key={company} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id={company}
+                        checked={formData.targetCompanies.includes(company)}
+                        onChange={() => handleCompanyToggle(company)}
+                        className="rounded border-border"
+                      />
+                      <Label htmlFor={company} className="text-sm text-foreground cursor-pointer">
+                        {company}
+                      </Label>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <div>
-                <Label htmlFor="last_submission_date">Last Submission Date</Label>
-                <Input
-                  id="last_submission_date"
-                  type="date"
-                  value={formData.last_submission_date}
-                  onChange={(e) => setFormData({ ...formData, last_submission_date: e.target.value })}
-                />
-              </div>
+
+              <Button 
+                onClick={handleSave} 
+                disabled={saving}
+                className="w-full btn-premium text-white font-semibold"
+              >
+                {saving ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Save Changes
+                  </>
+                )}
+              </Button>
             </CardContent>
           </Card>
-
-          <div className="flex justify-end">
-            <Button onClick={handleSave} disabled={saving}>
-              <Save className="w-4 h-4 mr-2" />
-              {saving ? 'Saving...' : 'Save Changes'}
-            </Button>
-          </div>
         </TabsContent>
 
-        <TabsContent value="achievements">
-          <Card>
+        <TabsContent value="achievements" className="space-y-6">
+          <Card className="card-premium animate-fade-in-scale">
             <CardHeader>
-              <CardTitle>Achievements</CardTitle>
+              <CardTitle className="flex items-center gap-3">
+                <div className="p-2 bg-warning/10 rounded-lg">
+                  <Award className="w-5 h-5 text-warning" />
+                </div>
+                <span className="text-gradient font-semibold">Your Achievements</span>
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {ACHIEVEMENTS.map(achievement => (
-                  <div
-                    key={achievement.id}
-                    className={`p-4 rounded-lg border ${
-                      achievement.earned ? 'bg-yellow-100' : 'opacity-50 bg-gray-100'
+                {ACHIEVEMENTS.map((achievement) => (
+                  <Card 
+                    key={achievement.id} 
+                    className={`card-premium transition-all duration-300 hover:scale-105 ${
+                      achievement.earned ? 'ring-2 ring-success/50' : 'opacity-60'
                     }`}
                   >
-                    <div className="text-center">
-                      <div className="text-2xl">{achievement.icon}</div>
-                      <h3 className="font-bold">{achievement.name}</h3>
-                      <p className="text-sm">{achievement.description}</p>
-                      {achievement.earned && <Badge variant="secondary">Earned</Badge>}
-                    </div>
-                  </div>
+                    <CardContent className="p-6 text-center">
+                      <div className="text-4xl mb-3">{achievement.icon}</div>
+                      <h3 className="font-semibold text-foreground mb-2">{achievement.name}</h3>
+                      <p className="text-sm text-muted-foreground mb-3">{achievement.description}</p>
+                      <Badge 
+                        variant={achievement.earned ? 'default' : 'secondary'}
+                        className={achievement.earned ? 'bg-success text-success-foreground' : ''}
+                      >
+                        {achievement.earned ? 'Earned' : 'Locked'}
+                      </Badge>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="settings">
-          <Card>
+        <TabsContent value="stats" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card className="card-premium hover:shadow-glow transition-all duration-500 hover:scale-105 animate-slide-in-up">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Total Problems</CardTitle>
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Target className="h-4 w-4 text-primary" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-foreground">{profile?.total_problems_solved || 0}</div>
+                <p className="text-xs text-muted-foreground mt-2">problems solved</p>
+              </CardContent>
+            </Card>
+
+            <Card className="card-premium hover:shadow-glow transition-all duration-500 hover:scale-105 animate-slide-in-up" style={{animationDelay: '0.1s'}}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Current Streak</CardTitle>
+                <div className="p-2 bg-warning/10 rounded-lg">
+                  <Star className="h-4 w-4 text-warning" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-foreground">{profile?.currentStreak || 0}</div>
+                <p className="text-xs text-muted-foreground mt-2">days in a row</p>
+              </CardContent>
+            </Card>
+
+            <Card className="card-premium hover:shadow-glow transition-all duration-500 hover:scale-105 animate-slide-in-up" style={{animationDelay: '0.2s'}}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Weekly Goal</CardTitle>
+                <div className="p-2 bg-accent/10 rounded-lg">
+                  <Calendar className="h-4 w-4 text-accent" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-foreground">{profile?.weeklyGoal || 0}</div>
+                <p className="text-xs text-muted-foreground mt-2">problems per week</p>
+              </CardContent>
+            </Card>
+
+            <Card className="card-premium hover:shadow-glow transition-all duration-500 hover:scale-105 animate-slide-in-up" style={{animationDelay: '0.3s'}}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Experience Level</CardTitle>
+                <div className="p-2 bg-success/10 rounded-lg">
+                  <Trophy className="h-4 w-4 text-success" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-foreground capitalize">{profile?.level || 'Beginner'}</div>
+                <p className="text-xs text-muted-foreground mt-2">current level</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="card-premium animate-fade-in-scale">
             <CardHeader>
-              <CardTitle>Settings</CardTitle>
+              <CardTitle className="flex items-center gap-3">
+                <div className="p-2 bg-accent/10 rounded-lg">
+                  <Code className="w-5 h-5 text-accent" />
+                </div>
+                <span className="text-gradient font-semibold">Recent Activity</span>
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <p>Coming soon: Notifications, Privacy settings etc.</p>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
+                  <div className="flex items-center gap-4">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <Target className="w-4 h-4 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-foreground">Last Problem Solved</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {profile?.last_submission_date 
+                          ? new Date(profile.last_submission_date).toLocaleDateString()
+                          : 'No problems solved yet'
+                        }
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
+                  <div className="flex items-center gap-4">
+                    <div className="p-2 bg-success/10 rounded-lg">
+                      <Calendar className="w-4 h-4 text-success" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-foreground">Member Since</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {profile?.createdAt 
+                          ? new Date(profile.createdAt).toLocaleDateString()
+                          : 'Recently'
+                        }
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

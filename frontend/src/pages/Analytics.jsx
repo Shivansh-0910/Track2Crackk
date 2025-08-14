@@ -26,10 +26,15 @@ import {
   Target,
   Award,
   Clock,
-  BarChart3
+  BarChart3,
+  Trophy,
+  Zap,
+  Activity,
+  Users
 } from "lucide-react"
 import { getAnalytics } from "@/api/analytics"
 import { useToast } from "@/hooks/useToast"
+import { Badge } from "@/components/ui/badge"
 
 export function Analytics() {
   const [analytics, setAnalytics] = useState(null)
@@ -60,7 +65,10 @@ export function Analytics() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <p className="text-muted-foreground">Loading your analytics...</p>
+        </div>
       </div>
     )
   }
@@ -74,123 +82,122 @@ export function Analytics() {
   ]
 
   return (
-    <div className="space-y-6 animate-in fade-in-50 duration-500">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Analytics</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Track your progress and identify areas for improvement
-          </p>
+    <div className="space-y-8 animate-in fade-in-50 duration-500">
+      {/* Header Section */}
+      <div className="card-premium rounded-3xl p-8 text-white shadow-glow animate-fade-in-scale">
+        <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary via-accent to-primary/80 opacity-90"></div>
+        <div className="relative z-10 flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-white to-white/90 bg-clip-text text-transparent">
+              📊 Analytics Dashboard
+            </h1>
+            <p className="text-lg text-white/90 font-medium">Track your progress and identify areas for improvement</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-white/20 rounded-full backdrop-blur-sm">
+              <BarChart3 className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-white">{analytics?.totalProblems || 0}</div>
+              <p className="text-sm text-white/80">problems solved</p>
+            </div>
+          </div>
         </div>
-        <Select value={timeRange} onValueChange={setTimeRange}>
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="7d">Last 7 days</SelectItem>
-            <SelectItem value="30d">Last 30 days</SelectItem>
-            <SelectItem value="90d">Last 90 days</SelectItem>
-            <SelectItem value="1y">Last year</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
+
+      {/* Time Range Selector */}
+      <Card className="card-premium animate-fade-in-scale">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Calendar className="w-5 h-5 text-primary" />
+              </div>
+              <span className="font-semibold text-foreground">Time Range</span>
+            </div>
+            <Select value={timeRange} onValueChange={setTimeRange}>
+              <SelectTrigger className="w-40 input-premium">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7d">Last 7 days</SelectItem>
+                <SelectItem value="30d">Last 30 days</SelectItem>
+                <SelectItem value="90d">Last 90 days</SelectItem>
+                <SelectItem value="1y">Last year</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-0 shadow-lg">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-                <Target className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Total Solved</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {(analytics?.difficultyDistribution?.easy || 0) + 
-                   (analytics?.difficultyDistribution?.medium || 0) + 
-                   (analytics?.difficultyDistribution?.hard || 0)}
-                </p>
-              </div>
+        <Card className="card-premium hover:shadow-glow transition-all duration-500 hover:scale-105 animate-slide-in-up">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Problems</CardTitle>
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Target className="h-4 w-4 text-primary" />
             </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-foreground">{analytics?.totalProblems || 0}</div>
+            <p className="text-xs text-success flex items-center gap-1 mt-2">
+              <TrendingUp className="w-3 h-3" />
+              +12 this week
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-0 shadow-lg">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
-                <TrendingUp className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Avg. Daily</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">2.3</p>
-              </div>
+        <Card className="card-premium hover:shadow-glow transition-all duration-500 hover:scale-105 animate-slide-in-up" style={{animationDelay: '0.1s'}}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Success Rate</CardTitle>
+            <div className="p-2 bg-success/10 rounded-lg">
+              <Trophy className="h-4 w-4 text-success" />
             </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-foreground">{analytics?.successRate || 0}%</div>
+            <p className="text-xs text-muted-foreground mt-2">accuracy</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-0 shadow-lg">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
-                <Award className="w-5 h-5 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Success Rate</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">78%</p>
-              </div>
+        <Card className="card-premium hover:shadow-glow transition-all duration-500 hover:scale-105 animate-slide-in-up" style={{animationDelay: '0.2s'}}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Avg Time</CardTitle>
+            <div className="p-2 bg-warning/10 rounded-lg">
+              <Clock className="h-4 w-4 text-warning" />
             </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-foreground">{analytics?.averageTime || 0} min</div>
+            <p className="text-xs text-muted-foreground mt-2">per problem</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-0 shadow-lg">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 dark:bg-orange-900/20 rounded-lg">
-                <Clock className="w-5 h-5 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Avg. Time</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">25m</p>
-              </div>
+        <Card className="card-premium hover:shadow-glow transition-all duration-500 hover:scale-105 animate-slide-in-up" style={{animationDelay: '0.3s'}}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Streak</CardTitle>
+            <div className="p-2 bg-accent/10 rounded-lg">
+              <Zap className="h-4 w-4 text-accent" />
             </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-foreground">{analytics?.currentStreak || 0}</div>
+            <p className="text-xs text-muted-foreground mt-2">days</p>
           </CardContent>
         </Card>
       </div>
 
+      {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Topic Mastery Radar Chart */}
-        <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-0 shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-blue-600" />
-              Topic Mastery
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <RadarChart data={analytics?.topicMastery || []}>
-                <PolarGrid />
-                <PolarAngleAxis dataKey="topic" />
-                <PolarRadiusAxis angle={90} domain={[0, 100]} />
-                <Radar
-                  name="Mastery"
-                  dataKey="mastery"
-                  stroke="#3B82F6"
-                  fill="#3B82F6"
-                  fillOpacity={0.3}
-                />
-              </RadarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
         {/* Difficulty Distribution */}
-        <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-0 shadow-lg">
+        <Card className="card-premium animate-fade-in-scale">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="w-5 h-5 text-green-600" />
-              Difficulty Distribution
+            <CardTitle className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <BarChart3 className="w-5 h-5 text-primary" />
+              </div>
+              <span className="text-gradient font-semibold">Difficulty Distribution</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -200,9 +207,10 @@ export function Analytics() {
                   data={difficultyData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={120}
-                  paddingAngle={5}
+                  labelLine={false}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
                   dataKey="value"
                 >
                   {difficultyData.map((entry, index) => (
@@ -212,92 +220,148 @@ export function Analytics() {
                 <Tooltip />
               </PieChart>
             </ResponsiveContainer>
-            <div className="flex justify-center gap-6 mt-4">
+            <div className="space-y-3 mt-6">
               {difficultyData.map((item, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
-                  <span className="text-sm text-gray-700 dark:text-gray-300">
-                    {item.name}: {item.value}
-                  </span>
+                <div key={index} className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: item.color }}></div>
+                    <span className="text-sm font-medium text-foreground">{item.name}</span>
+                  </div>
+                  <span className="font-bold text-foreground">{item.value}</span>
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Activity Heatmap and Company Progress */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Monthly Activity */}
-        <div className="lg:col-span-2">
-          <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-0 shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-purple-600" />
-                Daily Activity
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={analytics?.monthlyActivity || []}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="date" 
-                    tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  />
-                  <YAxis />
-                  <Tooltip 
-                    labelFormatter={(value) => new Date(value).toLocaleDateString()}
-                    formatter={(value) => [value, 'Problems Solved']}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="problems" 
-                    stroke="#8B5CF6" 
-                    strokeWidth={2}
-                    dot={{ fill: '#8B5CF6', strokeWidth: 2, r: 4 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Company Progress */}
-        <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-0 shadow-lg">
+        {/* Progress Over Time */}
+        <Card className="card-premium animate-fade-in-scale">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Award className="w-5 h-5 text-indigo-600" />
-              Company Readiness
+            <CardTitle className="flex items-center gap-3">
+              <div className="p-2 bg-success/10 rounded-lg">
+                <TrendingUp className="w-5 h-5 text-success" />
+              </div>
+              <span className="text-gradient font-semibold">Progress Over Time</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {analytics?.companyProgress?.map((company, index) => (
-                <div key={company.company} className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {company.company}
-                    </span>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {company.progress}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                    <div
-                      className="h-2 rounded-full transition-all duration-300"
-                      style={{
-                        width: `${company.progress}%`,
-                        backgroundColor: COLORS[index % COLORS.length]
-                      }}
-                    ></div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart
+                data={analytics?.progressOverTime || [
+                  { date: 'Week 1', problems: 5 },
+                  { date: 'Week 2', problems: 12 },
+                  { date: 'Week 3', problems: 18 },
+                  { date: 'Week 4', problems: 25 },
+                  { date: 'Week 5', problems: 32 },
+                  { date: 'Week 6', problems: 40 }
+                ]}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis dataKey="date" stroke="#6B7280" />
+                <YAxis stroke="#6B7280" />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px'
+                  }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="problems" 
+                  stroke="#3B82F6" 
+                  strokeWidth={3}
+                  dot={{ fill: '#3B82F6', strokeWidth: 2, r: 4 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
+
+      {/* Topic Performance */}
+      <Card className="card-premium animate-fade-in-scale">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-3">
+            <div className="p-2 bg-accent/10 rounded-lg">
+              <Activity className="w-5 h-5 text-accent" />
+            </div>
+            <span className="text-gradient font-semibold">Topic Performance</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart
+              data={analytics?.topicPerformance || [
+                { topic: 'Arrays', solved: 15, accuracy: 85 },
+                { topic: 'Strings', solved: 12, accuracy: 78 },
+                { topic: 'Linked Lists', solved: 8, accuracy: 72 },
+                { topic: 'Trees', solved: 10, accuracy: 68 },
+                { topic: 'Graphs', solved: 6, accuracy: 65 },
+                { topic: 'DP', solved: 4, accuracy: 60 }
+              ]}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis dataKey="topic" stroke="#6B7280" />
+              <YAxis stroke="#6B7280" />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--card))', 
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px'
+                }}
+              />
+              <Bar dataKey="solved" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* Recent Activity */}
+      <Card className="card-premium animate-fade-in-scale">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-3">
+            <div className="p-2 bg-warning/10 rounded-lg">
+              <Users className="w-5 h-5 text-warning" />
+            </div>
+            <span className="text-gradient font-semibold">Recent Activity</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {(analytics?.recentActivity || [
+              { problem: 'Two Sum', topic: 'Arrays', difficulty: 'Easy', date: '2024-01-15', status: 'Solved' },
+              { problem: 'Valid Parentheses', topic: 'Stacks', difficulty: 'Easy', date: '2024-01-14', status: 'Solved' },
+              { problem: 'Merge Two Lists', topic: 'Linked Lists', difficulty: 'Easy', date: '2024-01-13', status: 'Solved' },
+              { problem: 'Binary Tree Inorder', topic: 'Trees', difficulty: 'Medium', date: '2024-01-12', status: 'Attempted' },
+              { problem: 'Climbing Stairs', topic: 'DP', difficulty: 'Easy', date: '2024-01-11', status: 'Solved' }
+            ]).map((activity, index) => (
+              <div key={index} className="flex items-center justify-between p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                <div className="flex items-center gap-4">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <Target className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground">{activity.problem}</h4>
+                    <p className="text-sm text-muted-foreground">{activity.topic} • {activity.difficulty}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-muted-foreground">
+                    {new Date(activity.date).toLocaleDateString()}
+                  </span>
+                  <Badge 
+                    variant={activity.status === 'Solved' ? 'default' : 'secondary'}
+                    className={activity.status === 'Solved' ? 'bg-success text-success-foreground' : ''}
+                  >
+                    {activity.status}
+                  </Badge>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

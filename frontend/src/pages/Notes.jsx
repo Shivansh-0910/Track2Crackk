@@ -15,17 +15,27 @@ import {
   Calendar,
   StickyNote,
   Code,
-  BookOpen
+  BookOpen,
+  FileText,
+  Clock,
+  Filter
 } from "lucide-react"
 import { getNotes, createNote, updateNote, deleteNote } from "@/api/notes"
 import { useToast } from "@/hooks/useToast"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select"
 
 export function Notes() {
   const [notes, setNotes] = useState([])
   const [filteredNotes, setFilteredNotes] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedTag, setSelectedTag] = useState('')
+  const [selectedTag, setSelectedTag] = useState('all')
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingNote, setEditingNote] = useState(null)
   const [formData, setFormData] = useState({
@@ -47,7 +57,7 @@ export function Notes() {
       note.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
     )
 
-    if (selectedTag) {
+    if (selectedTag && selectedTag !== 'all') {
       filtered = filtered.filter(note => note.tags.includes(selectedTag))
     }
 
@@ -119,7 +129,7 @@ export function Notes() {
   }
 
   const handleUpdateNote = async () => {
-    if (!editingNote || !formData.title.trim() || !formData.content.trim()) {
+    if (!formData.title.trim() || !formData.content.trim()) {
       toast({
         title: "Error",
         description: "Please fill in title and content",
@@ -130,7 +140,7 @@ export function Notes() {
 
     try {
       console.log('Updating note:', editingNote._id, formData)
-      await updateNote(editingNote._id, {
+      const response = await updateNote(editingNote._id, {
         title: formData.title,
         content: formData.content,
         tags: formData.tags
@@ -138,7 +148,7 @@ export function Notes() {
 
       setNotes(prev => prev.map(note =>
         note._id === editingNote._id
-          ? { ...note, title: formData.title, content: formData.content, tags: formData.tags, updatedAt: new Date().toISOString() }
+          ? { ...note, ...response.note, updatedAt: new Date().toISOString() }
           : note
       ))
 
@@ -159,8 +169,9 @@ export function Notes() {
   }
 
   const handleDeleteNote = async (noteId) => {
+    if (!confirm('Are you sure you want to delete this note?')) return
+
     try {
-      console.log('Deleting note:', noteId)
       await deleteNote(noteId)
       setNotes(prev => prev.filter(note => note._id !== noteId))
       toast({
@@ -191,7 +202,7 @@ export function Notes() {
     setFormData({
       title: note.title,
       content: note.content,
-      tags: note.tags,
+      tags: [...note.tags],
       tagInput: ''
     })
   }
@@ -200,7 +211,7 @@ export function Notes() {
     if (formData.tagInput.trim() && !formData.tags.includes(formData.tagInput.trim())) {
       setFormData(prev => ({
         ...prev,
-        tags: [...prev.tags, prev.tagInput.trim()],
+        tags: [...prev.tags, formData.tagInput.trim()],
         tagInput: ''
       }))
     }
@@ -224,246 +235,321 @@ export function Notes() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <p className="text-muted-foreground">Loading your notes...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in-50 duration-500">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Notes & Solutions</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Keep track of your problem-solving approaches and insights
-          </p>
-        </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700">
-              <Plus className="w-4 h-4 mr-2" />
-              New Note
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl bg-white dark:bg-gray-800">
-            <DialogHeader>
-              <DialogTitle>Create New Note</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="title">Title</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                  placeholder="Enter note title..."
-                />
-              </div>
-              <div>
-                <Label htmlFor="content">Content</Label>
-                <Textarea
-                  id="content"
-                  value={formData.content}
-                  onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                  placeholder="Write your note content..."
-                  rows={8}
-                />
-              </div>
-              <div>
-                <Label htmlFor="tags">Tags</Label>
-                <div className="flex gap-2 mb-2">
-                  <Input
-                    id="tags"
-                    value={formData.tagInput}
-                    onChange={(e) => setFormData(prev => ({ ...prev, tagInput: e.target.value }))}
-                    placeholder="Add a tag..."
-                    onKeyPress={(e) => e.key === 'Enter' && addTag()}
-                  />
-                  <Button type="button" onClick={addTag} variant="outline">
-                    Add
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {formData.tags.map(tag => (
-                    <Badge key={tag} variant="secondary" className="cursor-pointer" onClick={() => removeTag(tag)}>
-                      {tag} ×
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleCreateNote}>
-                  Create Note
-                </Button>
-              </div>
+    <div className="space-y-8 animate-in fade-in-50 duration-500">
+      {/* Header Section */}
+      <div className="card-premium rounded-3xl p-8 text-white shadow-glow animate-fade-in-scale">
+        <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary via-accent to-primary/80 opacity-90"></div>
+        <div className="relative z-10 flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-white to-white/90 bg-clip-text text-transparent">
+              📝 Study Notes
+            </h1>
+            <p className="text-lg text-white/90 font-medium">Organize your DSA learning with personal notes</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-white/20 rounded-full backdrop-blur-sm">
+              <StickyNote className="w-6 h-6 text-white" />
             </div>
-          </DialogContent>
-        </Dialog>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-white">{notes.length}</div>
+              <p className="text-sm text-white/80">notes created</p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Search and Filter */}
-      <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-0 shadow-lg">
+      {/* Search and Filter Controls */}
+      <Card className="card-premium animate-fade-in-scale">
         <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
                 placeholder="Search notes..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 input-premium"
               />
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant={selectedTag === '' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setSelectedTag('')}
-              >
-                All
-              </Button>
-              {getAllTags().map(tag => (
-                <Button
-                  key={tag}
-                  variant={selectedTag === tag ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setSelectedTag(selectedTag === tag ? '' : tag)}
-                >
-                  {tag}
+            
+            <Select value={selectedTag} onValueChange={setSelectedTag}>
+              <SelectTrigger className="input-premium">
+                <Filter className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Filter by tag" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Tags</SelectItem>
+                {getAllTags().map(tag => (
+                  <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="w-full btn-premium text-white font-semibold">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Note
                 </Button>
-              ))}
-            </div>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[600px]">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Plus className="w-5 h-5" />
+                    Create New Note
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="title" className="text-sm font-medium text-foreground">Title</Label>
+                    <Input
+                      id="title"
+                      value={formData.title}
+                      onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                      className="input-premium"
+                      placeholder="Enter note title"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="content" className="text-sm font-medium text-foreground">Content</Label>
+                    <Textarea
+                      id="content"
+                      value={formData.content}
+                      onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+                      className="input-premium min-h-[200px]"
+                      placeholder="Write your note content..."
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-foreground">Tags</Label>
+                    <div className="flex gap-2 mb-2">
+                      <Input
+                        value={formData.tagInput}
+                        onChange={(e) => setFormData(prev => ({ ...prev, tagInput: e.target.value }))}
+                        onKeyPress={(e) => e.key === 'Enter' && addTag()}
+                        className="input-premium"
+                        placeholder="Add a tag"
+                      />
+                      <Button onClick={addTag} variant="outline" size="sm">
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {formData.tags.map(tag => (
+                        <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                          {tag}
+                          <button
+                            onClick={() => removeTag(tag)}
+                            className="ml-1 hover:text-destructive"
+                          >
+                            ×
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleCreateNote} className="btn-premium text-white">
+                      Create Note
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </CardContent>
       </Card>
 
       {/* Notes Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredNotes.map((note) => (
-          <Card key={note._id} className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <CardTitle className="text-lg line-clamp-2">{note.title}</CardTitle>
-                  <div className="flex items-center gap-2 mt-2 text-sm text-gray-600 dark:text-gray-400">
-                    <Calendar className="w-4 h-4" />
-                    <span>{new Date(note.createdAt).toLocaleDateString()}</span>
+        {filteredNotes.map((note, index) => (
+          <Card 
+            key={note._id} 
+            className="card-premium hover:shadow-glow transition-all duration-300 hover:scale-[1.02] animate-slide-in-up"
+            style={{ animationDelay: `${index * 0.1}s` }}
+          >
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                {/* Header */}
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <FileText className="w-5 h-5 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-foreground line-clamp-1">{note.title}</h3>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(note.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => startEditing(note)}
+                      className="hover:bg-primary/10 hover:text-primary"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteNote(note._id)}
+                      className="hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => startEditing(note)}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDeleteNote(note._id)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+
+                {/* Content Preview */}
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground line-clamp-3">
+                    {note.content}
+                  </p>
+                </div>
+
+                {/* Tags */}
+                {note.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {note.tags.map(tag => (
+                      <Badge key={tag} variant="outline" className="text-xs">
+                        <Tag className="w-3 h-3 mr-1" />
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+
+                {/* Footer */}
+                <div className="flex items-center justify-between pt-3 border-t border-border/30">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Clock className="w-3 h-3" />
+                    <span>
+                      {note.updatedAt && note.updatedAt !== note.createdAt
+                        ? `Updated ${new Date(note.updatedAt).toLocaleDateString()}`
+                        : `Created ${new Date(note.createdAt).toLocaleDateString()}`
+                      }
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {note.content.length} chars
+                  </div>
                 </div>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-gray-700 dark:text-gray-300 line-clamp-4 text-sm">
-                {note.content}
-              </p>
-              {note.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {note.tags.map(tag => (
-                    <Badge key={tag} variant="secondary" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              )}
             </CardContent>
           </Card>
         ))}
       </div>
 
+      {/* Empty State */}
       {filteredNotes.length === 0 && (
-        <div className="text-center py-12">
-          <StickyNote className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-            {notes.length === 0 ? 'No notes yet' : 'No notes found'}
-          </h3>
-          <p className="text-gray-600 dark:text-gray-400">
-            {notes.length === 0 
-              ? 'Create your first note to get started'
-              : 'Try adjusting your search or filter criteria'
-            }
-          </p>
-        </div>
+        <Card className="card-premium">
+          <CardContent className="p-12 text-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="p-4 bg-muted/30 rounded-full">
+                <StickyNote className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  {searchTerm || selectedTag !== 'all' ? 'No notes found' : 'No notes yet'}
+                </h3>
+                <p className="text-muted-foreground">
+                  {searchTerm || selectedTag !== 'all' 
+                    ? 'Try adjusting your search terms or filters'
+                    : 'Create your first note to start organizing your DSA learning!'
+                  }
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Edit Note Dialog */}
-      <Dialog open={!!editingNote} onOpenChange={(open) => !open && setEditingNote(null)}>
-        <DialogContent className="max-w-2xl bg-white dark:bg-gray-800">
-          <DialogHeader>
-            <DialogTitle>Edit Note</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="edit-title">Title</Label>
-              <Input
-                id="edit-title"
-                value={formData.title}
-                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="Enter note title..."
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-content">Content</Label>
-              <Textarea
-                id="edit-content"
-                value={formData.content}
-                onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                placeholder="Write your note content..."
-                rows={8}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-tags">Tags</Label>
-              <div className="flex gap-2 mb-2">
+      {editingNote && (
+        <Dialog open={!!editingNote} onOpenChange={() => setEditingNote(null)}>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Edit className="w-5 h-5" />
+                Edit Note
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-title" className="text-sm font-medium text-foreground">Title</Label>
                 <Input
-                  id="edit-tags"
-                  value={formData.tagInput}
-                  onChange={(e) => setFormData(prev => ({ ...prev, tagInput: e.target.value }))}
-                  placeholder="Add a tag..."
-                  onKeyPress={(e) => e.key === 'Enter' && addTag()}
+                  id="edit-title"
+                  value={formData.title}
+                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                  className="input-premium"
+                  placeholder="Enter note title"
                 />
-                <Button type="button" onClick={addTag} variant="outline">
-                  Add
+              </div>
+              <div>
+                <Label htmlFor="edit-content" className="text-sm font-medium text-foreground">Content</Label>
+                <Textarea
+                  id="edit-content"
+                  value={formData.content}
+                  onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+                  className="input-premium min-h-[200px]"
+                  placeholder="Write your note content..."
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-foreground">Tags</Label>
+                <div className="flex gap-2 mb-2">
+                  <Input
+                    value={formData.tagInput}
+                    onChange={(e) => setFormData(prev => ({ ...prev, tagInput: e.target.value }))}
+                    onKeyPress={(e) => e.key === 'Enter' && addTag()}
+                    className="input-premium"
+                    placeholder="Add a tag"
+                  />
+                  <Button onClick={addTag} variant="outline" size="sm">
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {formData.tags.map(tag => (
+                    <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                      {tag}
+                      <button
+                        onClick={() => removeTag(tag)}
+                        className="ml-1 hover:text-destructive"
+                      >
+                        ×
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setEditingNote(null)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleUpdateNote} className="btn-premium text-white">
+                  Update Note
                 </Button>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {formData.tags.map(tag => (
-                  <Badge key={tag} variant="secondary" className="cursor-pointer" onClick={() => removeTag(tag)}>
-                    {tag} ×
-                  </Badge>
-                ))}
-              </div>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setEditingNote(null)}>
-                Cancel
-              </Button>
-              <Button onClick={handleUpdateNote}>
-                Update Note
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }

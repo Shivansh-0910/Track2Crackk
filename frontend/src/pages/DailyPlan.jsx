@@ -14,7 +14,10 @@ import {
   ExternalLink,
   Settings,
   TrendingUp,
-  BookOpen
+  BookOpen,
+  Sparkles,
+  Timer,
+  Award
 } from "lucide-react"
 import { getDailyRecommendations } from "@/api/problems"
 import { useToast } from "@/hooks/useToast"
@@ -98,276 +101,329 @@ export function DailyPlan() {
   }
 
   const getDifficultyColor = (difficulty) => {
-    switch (difficulty) {
-      case 'Easy': return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-      case 'Medium': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
-      case 'Hard': return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
+    switch (difficulty.toLowerCase()) {
+      case 'easy':
+        return 'bg-success text-success-foreground'
+      case 'medium':
+        return 'bg-warning text-warning-foreground'
+      case 'hard':
+        return 'bg-destructive text-destructive-foreground'
+      default:
+        return 'bg-secondary text-secondary-foreground'
+    }
+  }
+
+  const getDifficultyIcon = (difficulty) => {
+    switch (difficulty.toLowerCase()) {
+      case 'easy':
+        return '🟢'
+      case 'medium':
+        return '🟡'
+      case 'hard':
+        return '🔴'
+      default:
+        return '⚪'
     }
   }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <p className="text-muted-foreground">Loading your personalized plan...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in-50 duration-500">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Daily Plan</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Personalized problem recommendations for today
-          </p>
+    <div className="space-y-8 animate-in fade-in-50 duration-500">
+      {/* Header Section */}
+      <div className="card-premium rounded-3xl p-8 text-white shadow-glow animate-fade-in-scale">
+        <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary via-accent to-primary/80 opacity-90"></div>
+        <div className="relative z-10 flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-white to-white/90 bg-clip-text text-transparent">
+              📅 Your Daily Plan
+            </h1>
+            <p className="text-lg text-white/90 font-medium">Personalized problems for today's practice session</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-white/20 rounded-full backdrop-blur-sm">
+              <Sparkles className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-white">{recommendations.length}</div>
+              <p className="text-sm text-white/80">problems today</p>
+            </div>
+          </div>
         </div>
-        <Button
-          onClick={generateNewPlan}
-          disabled={generating}
-          className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
-        >
-          <RefreshCw className={`w-4 h-4 mr-2 ${generating ? 'animate-spin' : ''}`} />
-          {generating ? 'Generating...' : 'Generate New Plan'}
-        </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Plan Configuration */}
-        <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-0 shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="w-5 h-5" />
-              Plan Settings
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div>
-              <label className="text-sm font-medium mb-3 block">
-                Time Available: {planConfig.timeAvailable} minutes
-              </label>
-              <Slider
-                value={[planConfig.timeAvailable]}
-                onValueChange={(value) => setPlanConfig(prev => ({ ...prev, timeAvailable: value[0] }))}
-                max={180}
-                min={15}
-                step={15}
-                className="w-full"
-              />
+      {/* Plan Configuration */}
+      <Card className="card-premium animate-fade-in-scale">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Settings className="w-5 h-5 text-primary" />
+            </div>
+            <span className="text-gradient font-semibold">Plan Configuration</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">
+                  Time Available: {planConfig.timeAvailable} minutes
+                </label>
+                <Slider
+                  value={[planConfig.timeAvailable]}
+                  onValueChange={(value) => setPlanConfig(prev => ({ ...prev, timeAvailable: value[0] }))}
+                  max={180}
+                  min={30}
+                  step={15}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                  <span>30 min</span>
+                  <span>180 min</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">Difficulty Preference</label>
+                <Select value={planConfig.difficultyPreference} onValueChange={(value) => setPlanConfig(prev => ({ ...prev, difficultyPreference: value }))}>
+                  <SelectTrigger className="input-premium">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="balanced">Balanced Mix</SelectItem>
+                    <SelectItem value="easy">Focus on Easy</SelectItem>
+                    <SelectItem value="medium">Focus on Medium</SelectItem>
+                    <SelectItem value="hard">Focus on Hard</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            <div>
-              <label className="text-sm font-medium mb-2 block">Difficulty Preference</label>
-              <Select
-                value={planConfig.difficultyPreference}
-                onValueChange={(value) => setPlanConfig(prev => ({ ...prev, difficultyPreference: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="easy">Focus on Easy</SelectItem>
-                  <SelectItem value="balanced">Balanced Mix</SelectItem>
-                  <SelectItem value="challenging">More Challenging</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">Topic Focus</label>
+                <Select value={planConfig.topicFocus} onValueChange={(value) => setPlanConfig(prev => ({ ...prev, topicFocus: value }))}>
+                  <SelectTrigger className="input-premium">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="weak-areas">Weak Areas</SelectItem>
+                    <SelectItem value="recent-topics">Recent Topics</SelectItem>
+                    <SelectItem value="random">Random Mix</SelectItem>
+                    <SelectItem value="company-specific">Company Specific</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div>
-              <label className="text-sm font-medium mb-2 block">Topic Focus</label>
-              <Select
-                value={planConfig.topicFocus}
-                onValueChange={(value) => setPlanConfig(prev => ({ ...prev, topicFocus: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="weak-areas">Weak Areas</SelectItem>
-                  <SelectItem value="balanced">Balanced</SelectItem>
-                  <SelectItem value="strong-areas">Strong Areas</SelectItem>
-                  <SelectItem value="random">Random Mix</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-3">
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="companySpecific"
                   checked={planConfig.companySpecific}
-                  onCheckedChange={(checked) => setPlanConfig(prev => ({ ...prev, companySpecific: !!checked }))}
+                  onCheckedChange={(checked) => setPlanConfig(prev => ({ ...prev, companySpecific: checked }))}
                 />
-                <label htmlFor="companySpecific" className="text-sm font-medium">
-                  Company-specific preparation
+                <label htmlFor="companySpecific" className="text-sm font-medium text-foreground">
+                  Include company-specific problems
                 </label>
               </div>
 
               {planConfig.companySpecific && (
-                <Select
-                  value={planConfig.targetCompany}
-                  onValueChange={(value) => setPlanConfig(prev => ({ ...prev, targetCompany: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select company" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="google">Google</SelectItem>
-                    <SelectItem value="amazon">Amazon</SelectItem>
-                    <SelectItem value="microsoft">Microsoft</SelectItem>
-                    <SelectItem value="meta">Meta</SelectItem>
-                    <SelectItem value="apple">Apple</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-2 block">Target Company</label>
+                  <Select value={planConfig.targetCompany} onValueChange={(value) => setPlanConfig(prev => ({ ...prev, targetCompany: value }))}>
+                    <SelectTrigger className="input-premium">
+                      <SelectValue placeholder="Select company" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="google">Google</SelectItem>
+                      <SelectItem value="amazon">Amazon</SelectItem>
+                      <SelectItem value="microsoft">Microsoft</SelectItem>
+                      <SelectItem value="meta">Meta</SelectItem>
+                      <SelectItem value="apple">Apple</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Daily Plan Content */}
-        <div className="lg:col-span-3 space-y-6">
-          {/* Progress Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-0 shadow-lg">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-                    <Target className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Problems</p>
-                    <p className="text-xl font-bold">{completedProblems.length}/{recommendations.length}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          <Button 
+            onClick={generateNewPlan} 
+            disabled={generating}
+            className="w-full btn-premium text-white font-semibold"
+          >
+            {generating ? (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                Generating Plan...
+              </>
+            ) : (
+              <>
+                <Sparkles className="mr-2 h-4 w-4" />
+                Generate New Plan
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
 
-            <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-0 shadow-lg">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
-                    <Clock className="w-5 h-5 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Est. Time</p>
+      {/* Progress Overview */}
+      <Card className="card-premium animate-fade-in-scale">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-3">
+            <div className="p-2 bg-success/10 rounded-lg">
+              <Target className="w-5 h-5 text-success" />
+            </div>
+            <span className="text-gradient font-semibold">Today's Progress</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center p-4 bg-muted/30 rounded-xl">
+              <div className="text-3xl font-bold text-primary mb-2">
+                {completedProblems.length}/{recommendations.length}
+              </div>
+              <div className="text-sm text-muted-foreground font-medium">Problems Completed</div>
+            </div>
+            <div className="text-center p-4 bg-muted/30 rounded-xl">
+              <div className="text-3xl font-bold text-accent mb-2">
+                {getTotalEstimatedTime()} min
+              </div>
+              <div className="text-sm text-muted-foreground font-medium">Total Time</div>
+            </div>
+            <div className="text-center p-4 bg-muted/30 rounded-xl">
+              <div className="text-3xl font-bold text-success mb-2">
+                {getCompletionProgress().toFixed(1)}%
+              </div>
+              <div className="text-sm text-muted-foreground font-medium">Completion</div>
+            </div>
+          </div>
+          <div className="mt-6">
+            <div className="flex justify-between text-sm text-muted-foreground mb-2">
+              <span>Progress</span>
+              <span>{getCompletionProgress().toFixed(1)}%</span>
+            </div>
+            <div className="w-full bg-muted rounded-full h-3">
+              <div 
+                className="bg-gradient-to-r from-primary to-accent h-3 rounded-full transition-all duration-500"
+                style={{ width: `${getCompletionProgress()}%` }}
+              ></div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Problems List */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-foreground">Today's Problems</h2>
+          <Badge variant="secondary" className="font-semibold">
+            {recommendations.length} problems
+          </Badge>
+        </div>
+
+        {recommendations.map((problem, index) => (
+          <Card 
+            key={problem._id || index} 
+            className={`card-premium hover:shadow-glow transition-all duration-300 hover:scale-[1.02] animate-slide-in-up ${
+              completedProblems.includes(problem._id || index) ? 'ring-2 ring-success/50' : ''
+            }`}
+            style={{ animationDelay: `${index * 0.1}s` }}
+          >
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="flex-1 space-y-3">
+                  <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
-                      <p className={`text-xl font-bold ${
-                        getTotalEstimatedTime() > planConfig.timeAvailable
-                          ? 'text-red-600 dark:text-red-400'
-                          : 'text-green-600 dark:text-green-400'
-                      }`}>
-                        {getTotalEstimatedTime()} min
-                      </p>
-                      <span className="text-sm text-gray-500">/ {planConfig.timeAvailable} min</span>
+                      <span className="text-lg">{getDifficultyIcon(problem.difficulty)}</span>
+                      <Badge className={getDifficultyColor(problem.difficulty)}>
+                        {problem.difficulty}
+                      </Badge>
                     </div>
-                    {getTotalEstimatedTime() > planConfig.timeAvailable && (
-                      <p className="text-xs text-red-500 mt-1">⚠️ Exceeds time limit</p>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Clock className="w-4 h-4" />
+                      <span className="text-sm">{problem.estimatedTime} min</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground mb-1">
+                      {problem.title}
+                    </h3>
+                    <p className="text-muted-foreground text-sm line-clamp-2">
+                      {problem.description}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 text-primary" />
+                      <span className="text-sm text-muted-foreground">{problem.topic}</span>
+                    </div>
+                    {problem.company && (
+                      <div className="flex items-center gap-2">
+                        <Award className="w-4 h-4 text-accent" />
+                        <span className="text-sm text-muted-foreground">{problem.company}</span>
+                      </div>
                     )}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
 
-            <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-0 shadow-lg">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
-                    <TrendingUp className="w-5 h-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Progress</p>
-                    <p className="text-xl font-bold">{Math.round(getCompletionProgress())}%</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Today's Problems */}
-          <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-0 shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-blue-600" />
-                Today's Problems
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {recommendations.map((problem, index) => {
-                const isCompleted = completedProblems.includes(problem._id)
-                return (
-                  <div
-                    key={problem._id}
-                    className={`p-4 rounded-lg border transition-all duration-200 ${
-                      isCompleted
-                        ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800'
-                        : 'bg-gray-50/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 hover:bg-gray-100/50 dark:hover:bg-gray-700/50'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/20 text-blue-600 font-medium text-sm">
-                          {index + 1}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-medium text-gray-900 dark:text-white">
-                              {problem.name}
-                            </h3>
-                            <Badge className={getDifficultyColor(problem.difficulty)}>
-                              {problem.difficulty}
-                            </Badge>
-                          </div>
-                          <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                            <span className="flex items-center gap-1">
-                              <BookOpen className="w-4 h-4" />
-                              {problem.topic}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-4 h-4" />
-                              ~{problem.estimatedTime} min
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => window.open(problem.url, '_blank')}
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </Button>
-                        {!isCompleted ? (
-                          <Button
-                            size="sm"
-                            onClick={() => markAsCompleted(problem._id)}
-                            className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
-                          >
-                            <CheckCircle className="w-4 h-4 mr-1" />
-                            Complete
-                          </Button>
-                        ) : (
-                          <Badge variant="secondary" className="bg-green-100 text-green-800">
-                            ✓ Completed
-                          </Badge>
-                        )}
-                      </div>
+                <div className="flex flex-col items-end gap-3 ml-4">
+                  {completedProblems.includes(problem._id || index) ? (
+                    <div className="flex items-center gap-2 text-success">
+                      <CheckCircle className="w-5 h-5" />
+                      <span className="text-sm font-medium">Completed</span>
                     </div>
-                  </div>
-                )
-              })}
+                  ) : (
+                    <Button
+                      onClick={() => markAsCompleted(problem._id || index)}
+                      variant="outline"
+                      size="sm"
+                      className="hover:bg-success/10 hover:text-success hover:border-success/30"
+                    >
+                      Mark Complete
+                    </Button>
+                  )}
+                  
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="hover:bg-primary/10 hover:text-primary"
+                    onClick={() => window.open(problem.leetcodeUrl, '_blank')}
+                  >
+                    <ExternalLink className="w-4 h-4 mr-1" />
+                    Solve
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
+        ))}
 
-          {recommendations.length === 0 && (
-            <div className="text-center py-12">
-              <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No plan generated yet</h3>
-              <p className="text-gray-600 dark:text-gray-400">Configure your preferences and generate a daily plan</p>
-            </div>
-          )}
-        </div>
+        {recommendations.length === 0 && (
+          <Card className="card-premium">
+            <CardContent className="p-12 text-center">
+              <div className="flex flex-col items-center gap-4">
+                <div className="p-4 bg-muted/30 rounded-full">
+                  <BookOpen className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">No problems generated yet</h3>
+                  <p className="text-muted-foreground">Configure your plan settings and generate your daily problems!</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   )

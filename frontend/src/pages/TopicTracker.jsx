@@ -5,9 +5,10 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, BookOpen, TrendingUp, Calendar, Filter } from "lucide-react"
+import { Search, BookOpen, TrendingUp, Calendar, Filter, Target, Award, Clock } from "lucide-react"
 import { getTopics } from "@/api/topics"
 import { useToast } from "@/hooks/useToast"
+import { Button } from "@/components/ui/button"
 
 export function TopicTracker() {
   const [topics, setTopics] = useState([])
@@ -78,10 +79,10 @@ export function TopicTracker() {
   }, [topics, searchTerm, sortBy, filterBy])
 
   const getProgressColor = (progress) => {
-    if (progress >= 80) return 'bg-green-500'
-    if (progress >= 60) return 'bg-blue-500'
-    if (progress >= 40) return 'bg-yellow-500'
-    return 'bg-red-500'
+    if (progress >= 80) return 'bg-success'
+    if (progress >= 60) return 'bg-primary'
+    if (progress >= 40) return 'bg-warning'
+    return 'bg-destructive'
   }
 
   const getAccuracyBadge = (accuracy) => {
@@ -90,38 +91,80 @@ export function TopicTracker() {
     return 'destructive'
   }
 
+  const getStatusIcon = (progress) => {
+    if (progress === 100) return '🏆'
+    if (progress >= 80) return '🔥'
+    if (progress >= 60) return '⚡'
+    if (progress >= 40) return '📈'
+    if (progress > 0) return '🚀'
+    return '📚'
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <p className="text-muted-foreground">Loading your topics...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in-50 duration-500">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Topic Tracker</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Track your progress across different DSA topics</p>
+    <div className="space-y-8 animate-in fade-in-50 duration-500">
+      {/* Header Section */}
+      <div className="card-premium rounded-3xl p-8 text-white shadow-glow animate-fade-in-scale">
+        <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary via-accent to-primary/80 opacity-90"></div>
+        <div className="relative z-10 flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-white to-white/90 bg-clip-text text-transparent">
+              📚 Topic Tracker
+            </h1>
+            <p className="text-lg text-white/90 font-medium">Track your progress across all DSA topics</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-white/20 rounded-full backdrop-blur-sm">
+              <BookOpen className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-white">{topics.length}</div>
+              <p className="text-sm text-white/80">topics available</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Filters and Search */}
-      <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-0 shadow-lg">
+      {/* Search and Filter Controls */}
+      <Card className="card-premium animate-fade-in-scale">
         <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
                 placeholder="Search topics..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 input-premium"
               />
             </div>
+            
+            <Select value={filterBy} onValueChange={setFilterBy}>
+              <SelectTrigger className="input-premium">
+                <Filter className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Topics</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="in-progress">In Progress</SelectItem>
+                <SelectItem value="not-started">Not Started</SelectItem>
+              </SelectContent>
+            </Select>
+
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-full md:w-48">
+              <SelectTrigger className="input-premium">
+                <TrendingUp className="w-4 h-4 mr-2" />
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
@@ -131,94 +174,154 @@ export function TopicTracker() {
                 <SelectItem value="lastActivity">Last Activity</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={filterBy} onValueChange={setFilterBy}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Filter by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Topics</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="in-progress">In Progress</SelectItem>
-                <SelectItem value="not-started">Not Started</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </CardContent>
       </Card>
 
       {/* Topics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredTopics.map((topic) => (
-            <Link key={topic._id} to={`/topics/${topic._id}`}>
-              <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="text-2xl">{topic.icon}</div>
-                      <div>
-                        <CardTitle className="text-lg">{topic.name}</CardTitle>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {topic.solvedProblems}/{topic.totalProblems} problems
-                        </p>
-                      </div>
+        {filteredTopics.map((topic, index) => (
+          <Card 
+            key={topic._id} 
+            className="card-premium hover:shadow-glow transition-all duration-300 hover:scale-[1.02] animate-slide-in-up cursor-pointer group"
+            style={{ animationDelay: `${index * 0.1}s` }}
+            onClick={() => window.location.href = `/topics/${topic._id}`}
+          >
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                {/* Header */}
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">{getStatusIcon(topic.progress)}</div>
+                    <div>
+                      <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                        {topic.name}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">{topic.description}</p>
                     </div>
-                    <Badge variant={getAccuracyBadge(topic.accuracy)}>
-                      {topic.accuracy}%
-                    </Badge>
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <div className="flex justify-between text-sm mb-2">
-                      <span className="text-gray-600 dark:text-gray-400">Progress</span>
-                      <span className="font-medium">{topic.progress}%</span>
-                    </div>
-                    <Progress value={topic.progress} className="h-2" />
-                  </div>
+                  <Badge className={getAccuracyBadge(topic.accuracy)}>
+                    {topic.accuracy}%
+                  </Badge>
+                </div>
 
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-2">
-                      <div className="text-sm font-medium text-green-700 dark:text-green-400">
-                        {topic.difficulty.easy}
-                      </div>
-                      <div className="text-xs text-green-600 dark:text-green-500">Easy</div>
-                    </div>
-                    <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-2">
-                      <div className="text-sm font-medium text-yellow-700 dark:text-yellow-400">
-                        {topic.difficulty.medium}
-                      </div>
-                      <div className="text-xs text-yellow-600 dark:text-yellow-500">Medium</div>
-                    </div>
-                    <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-2">
-                      <div className="text-sm font-medium text-red-700 dark:text-red-400">
-                        {topic.difficulty.hard}
-                      </div>
-                      <div className="text-xs text-red-600 dark:text-red-500">Hard</div>
-                    </div>
+                {/* Progress Section */}
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-foreground">Progress</span>
+                    <span className="text-sm font-bold text-primary">{topic.progress}%</span>
                   </div>
+                  <Progress value={topic.progress} className="h-2" />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>{topic.solvedProblems} solved</span>
+                    <span>{topic.totalProblems} total</span>
+                  </div>
+                </div>
 
-                  <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4" />
-                      <span>Last: {new Date(topic.lastActivity).toLocaleDateString()}</span>
+                {/* Stats */}
+                <div className="grid grid-cols-2 gap-3 pt-3 border-t border-border/30">
+                  <div className="text-center p-2 bg-muted/30 rounded-lg">
+                    <div className="flex items-center justify-center gap-1 mb-1">
+                      <Target className="w-3 h-3 text-primary" />
+                      <span className="text-xs font-medium text-foreground">Goal</span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <TrendingUp className="w-4 h-4" />
-                      <span>{topic.accuracy}% accuracy</span>
-                    </div>
+                    <div className="text-sm font-bold text-primary">{topic.targetProblems || topic.totalProblems}</div>
                   </div>
-                </CardContent>
-              </Card>
-            </Link>
+                  <div className="text-center p-2 bg-muted/30 rounded-lg">
+                    <div className="flex items-center justify-center gap-1 mb-1">
+                      <Clock className="w-3 h-3 text-accent" />
+                      <span className="text-xs font-medium text-foreground">Avg Time</span>
+                    </div>
+                    <div className="text-sm font-bold text-accent">{topic.averageTime || '--'} min</div>
+                  </div>
+                </div>
+
+                {/* Last Activity */}
+                {topic.lastActivity && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t border-border/30">
+                    <Calendar className="w-3 h-3" />
+                    <span>Last active: {new Date(topic.lastActivity).toLocaleDateString()}</span>
+                  </div>
+                )}
+
+                {/* Action Button */}
+                <div className="pt-3">
+                  <Button 
+                    className="w-full btn-premium text-white font-semibold"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      window.location.href = `/topics/${topic._id}`
+                    }}
+                  >
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    {topic.progress === 100 ? 'Review' : 'Practice'}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
+      {/* Empty State */}
       {filteredTopics.length === 0 && (
-        <div className="text-center py-12">
-          <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No topics found</h3>
-          <p className="text-gray-600 dark:text-gray-400">Try adjusting your search or filter criteria</p>
-        </div>
+        <Card className="card-premium">
+          <CardContent className="p-12 text-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="p-4 bg-muted/30 rounded-full">
+                <BookOpen className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">No topics found</h3>
+                <p className="text-muted-foreground">
+                  {searchTerm ? 'Try adjusting your search terms' : 'Topics will appear here once available'}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Summary Stats */}
+      {filteredTopics.length > 0 && (
+        <Card className="card-premium animate-fade-in-scale">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3">
+              <div className="p-2 bg-accent/10 rounded-lg">
+                <Award className="w-5 h-5 text-accent" />
+              </div>
+              <span className="text-gradient font-semibold">Summary</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="text-center p-4 bg-muted/30 rounded-xl">
+                <div className="text-3xl font-bold text-primary mb-2">
+                  {filteredTopics.length}
+                </div>
+                <div className="text-sm text-muted-foreground font-medium">Total Topics</div>
+              </div>
+              <div className="text-center p-4 bg-muted/30 rounded-xl">
+                <div className="text-3xl font-bold text-success mb-2">
+                  {filteredTopics.filter(t => t.progress === 100).length}
+                </div>
+                <div className="text-sm text-muted-foreground font-medium">Completed</div>
+              </div>
+              <div className="text-center p-4 bg-muted/30 rounded-xl">
+                <div className="text-3xl font-bold text-warning mb-2">
+                  {filteredTopics.filter(t => t.progress > 0 && t.progress < 100).length}
+                </div>
+                <div className="text-sm text-muted-foreground font-medium">In Progress</div>
+              </div>
+              <div className="text-center p-4 bg-muted/30 rounded-xl">
+                <div className="text-3xl font-bold text-accent mb-2">
+                  {Math.round(filteredTopics.reduce((acc, t) => acc + t.progress, 0) / filteredTopics.length)}%
+                </div>
+                <div className="text-sm text-muted-foreground font-medium">Avg Progress</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   )
